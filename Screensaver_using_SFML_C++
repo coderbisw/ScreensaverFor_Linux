@@ -1,0 +1,120 @@
+#include <SFML/Graphics.hpp>
+#include <X11/Xlib.h>
+#include <iostream>
+#include <cstdlib>
+#include <string>
+using namespace std;
+using namespace sf;
+
+#undef None
+
+
+// Ignore transient X11 errors (like BadWindow in XScreenSaver preview) to prevent crashing
+int x11ErrorHandler(Display* display, XErrorEvent* event) {
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    // Register X11 error handler immediately
+    XSetErrorHandler(x11ErrorHandler);
+
+    unsigned long windowId = 0;
+
+    // Parse XScreenSaver command-line arguments
+
+    // for (int i = 1; i <argc; ++i) {
+    //     string arg = argv[i];
+    //     if ((arg == "-window" || arg == "-w") && i + 1 < argc) {
+    //         windowId = std::strtoul(argv[i + 1], nullptr, 0);
+    //         i++;
+    //     }
+    // }
+
+    // Fallback to environment variable if windowId is 0
+    if (windowId == 0) {
+        if (const char* envWindow = getenv("XSCREENSAVER_WINDOW")) {
+            //arg = name of request variable
+            windowId = strtoul(envWindow, nullptr, 0);
+               
+        }
+
+ }
+
+
+    try {
+        RenderWindow window;
+
+        if (windowId != 0) {
+            window.create(static_cast<sf::WindowHandle>(windowId));
+        } else {
+            sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+            window.create(desktop, "SFML Screensaver",Style::None);
+            window.setMouseCursorVisible(false);
+        }
+
+        if (!window.isOpen()) {
+            return 0;
+        }
+
+        window.setFramerateLimit(60);
+
+        sf::CircleShape ball(30.f);
+        ball.setFillColor(sf::Color::Red);
+        sf::Vector2f velocity(3.f, 3.f);
+        sf::Vector2i lastMousePos = sf::Mouse::getPosition();
+        // cout<<"lastMousePos.x "<<lastMousePos.x<<endl;//
+        // cout<<"lastMousePos.y "<<lastMousePos.y<<endl;//
+        
+
+
+
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed || 
+                    event.type == sf::Event::KeyPressed || 
+                    event.type == sf::Event::MouseButtonPressed) {
+                    window.close();
+                }
+            }
+
+            if (windowId == 0) {
+                sf::Vector2i currentMousePos = sf::Mouse::getPosition();
+                //cout<<"currentMousePos.x - lastMousePos.x "<<currentMousePos.x - lastMousePos.x <<endl;
+                //cout<<"currentMousePos.x - lastMousePos.x "<<currentMousePos.y - lastMousePos.y <<endl;
+                if (std::abs(currentMousePos.x - lastMousePos.x) > 10 || 
+                    std::abs(currentMousePos.y - lastMousePos.y) > 10) {
+                    window.close();
+                // //abs = absolute number or modulas
+                }
+            }
+
+             Vector2u winSize = window.getSize();
+             // cout<<winSize.x<<endl;//1024//width
+             //   cout<<winSize.y<<endl;//600//height
+            if (winSize.x > 0 && winSize.y > 0) {
+                ball.move(velocity);//3,3
+                Vector2f pos = ball.getPosition();
+                // cout<<"pos.y :"<<pos.y<<endl;
+                if (pos.x <= 0 || pos.x + ball.getRadius()*2 >= winSize.x) {
+                    velocity.x = -velocity.x;
+
+                }
+                if (pos.y <= 0 || pos.y + ball.getRadius()*2 >= winSize.y){
+                 velocity.y = -velocity.y;
+
+                    }
+            }
+              
+            window.clear(sf::Color::Green);
+            window.draw(ball);
+            window.display();
+        }
+    } catch (...) {
+        return 0;
+    }
+
+
+     return 0;
+
+}
